@@ -3,25 +3,28 @@
 int slaveProcess(int * masterToSlave, int * slaveToMaster){
     
     int slaveToSlaveMaster[2];
-    char *params[] = {"/usr/bin/md5sum", NULL};
+    char *params[] = {"/usr/bin/md5sum", NULL, NULL};
+    char * fileName;
     char output[MD5_LENGTH + 1] = {0};
 
-    if(pipe(slaveToSlaveMaster) == 0){
-        if(fork() == 0){
-            close(0);
-            close(slaveToSlaveMaster[STDIN]);
-            dup2(slaveToSlaveMaster[STDOUT],1);
-            close(slaveToSlaveMaster[STDOUT]);
-            execvp("/usr/bin/md5sum",params);  // TRIAL   
+    while(1){
+        read(masterToSlave[0], &fileName, sizeof(char *));
+        createPipe(slaveToSlaveMaster);
+        if(createSlave() == 0){
+            closePipe(STDIN);
+            closePipe(slaveToSlaveMaster[STDIN]);
+            dupPipe(slaveToSlaveMaster[STDOUT], STDOUT);
+            closePipe(slaveToSlaveMaster[STDOUT]);
+            params[1] = fileName;
+            execvp("/usr/bin/md5sum", params);
         }
         else{
+            closePipe(slaveToSlaveMaster[STDOUT]);
+            dupPipe(slaveToSlaveMaster[STDIN], 0);
+            closePipe(slaveToSlaveMaster[STDIN]);
             wait(NULL);
-            close(slaveToSlaveMaster[STDOUT]);
-            dup2(slaveToSlaveMaster[STDIN], 0);
-            close(slaveToSlaveMaster[STDIN]);
-            read(0, output, MD5_LENGTH + 1);
-            printf("\n MD5 : %s\n", output);
-        }
+            read(STDIN, output, MD5_LENGTH + 1);
+            write(slaveToMaster[STDOUT], output, MD5_LENGTH + 1);        }
     }
     return 0;
 }

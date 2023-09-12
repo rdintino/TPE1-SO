@@ -5,12 +5,7 @@
 #define STDIN 0
 #define STDOUT 1
 
-#include <stdio.h>
-#include <unistd.h>
-#include <sys/select.h>
-#include <sys/types.h>
-#include<sys/wait.h>
-#include <string.h>
+#include "utils.h"
 
 int slaveProcess(int * appToSlave, int * slaveToApp);
 
