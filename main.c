@@ -1,6 +1,43 @@
 #include "./includes/main.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <sys/select.h>
+#include <string.h>
+
 
 int main(int argc, char * argv[]){
+
+    //Probando a ver si funciona bien la shmem
+    const char *name = "/my_shared_memory";
+    int shm_fd = shm_open(name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
+    if (shm_fd == -1) {
+        perror("shm_open");
+        exit(1);
+    }
+    size_t shm_size = 4096;
+    if (ftruncate(shm_fd, shm_size) == -1) {
+        perror("ftruncate");
+        exit(1);
+    }
+    void *shm_ptr = mmap(NULL, shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
+    if (shm_ptr == MAP_FAILED) {
+        perror("mmap");
+        exit(1);
+    }
+
+    char *data = "Probando a lo boca";
+    strncpy((char *)shm_ptr, data, strlen(data) + 1);
+
+    if (munmap(shm_ptr, shm_size) == -1) {
+        perror("munmap");
+        exit(1);
+    }
+
+    close(shm_fd);
 
     char * files[argc - 1];
     int filesQty = 0;
