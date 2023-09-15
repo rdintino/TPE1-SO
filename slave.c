@@ -20,7 +20,7 @@ int slaveProcess(int * masterToSlave, int * slaveToMaster){
         }
         else{
             closePipe(slaveToSlaveMaster[STDOUT]);
-            dupPipe(slaveToSlaveMaster[STDIN], 0);
+            dupPipe(slaveToSlaveMaster[STDIN], STDIN);
             closePipe(slaveToSlaveMaster[STDIN]);
             wait(NULL);
             read(STDIN, output, MD5_LENGTH + 1);

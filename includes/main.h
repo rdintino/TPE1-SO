@@ -2,7 +2,10 @@
 #define _MAIN_H_
 
 #include "slave.h"
-#include <stdlib.h>
+#include <fcntl.h>
+#include <sys/mman.h>
+#include <sys/select.h>
+#include <string.h>
 
 #define SLAVE_FILES 2
 

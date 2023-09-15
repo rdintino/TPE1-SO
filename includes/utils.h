@@ -2,10 +2,10 @@
 #define _UTILS_H_
 
 #include <stdio.h>
+#include <unistd.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <sys/wait.h>
 
 int isFile(char * path);

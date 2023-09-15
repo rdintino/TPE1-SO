@@ -1,13 +1,4 @@
 #include "./includes/main.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <fcntl.h>
-#include <sys/mman.h>
-#include <sys/stat.h>
-#include <unistd.h>
-#include <sys/select.h>
-#include <string.h>
-
 
 int main(int argc, char * argv[]){
 
@@ -67,33 +58,31 @@ int main(int argc, char * argv[]){
     }
 
     int currentSlave = 0;
-    int currentId = 1;
-    while(currentSlave < slavesQty && currentId != 0){
-        currentId = createSlave();
-        if(currentId == 0){
+    int currentId;
+    while(currentSlave < slavesQty){
+        if((currentId = createSlave()) == 0){
             break;
         }
         currentSlave++;
     }
 
     if(currentId == 0){
-        close(slaves[currentSlave-1].masterToSlave[1]);
-        close(slaves[currentSlave-1].slaveToMaster[0]);
+        closePipe(slaves[currentSlave-1].masterToSlave[1]);
+        closePipe(slaves[currentSlave-1].slaveToMaster[0]);
 
         slaveProcess(slaves[currentSlave-1].masterToSlave, slaves[currentSlave-1].slaveToMaster);
     }
 
     else{
         for(int i = 0; i < slavesQty; i++){
-            close(slaves[i].masterToSlave[0]);
-            close(slaves[i].slaveToMaster[1]);
+            closePipe(slaves[i].masterToSlave[0]);
+            closePipe(slaves[i].slaveToMaster[1]);
         }
         int currentFile = 0;
         for(int i = 0; i < slavesQty && currentFile < filesQty; i++, currentFile++){
             write(slaves[i].masterToSlave[1], files[currentFile], sizeof(char *));
             slaves[i].name = files[currentFile];
         }
-
         char hash[MD5_LENGTH + 1] = {0};
         int filesRead = 0;
         while(filesRead < filesQty){
