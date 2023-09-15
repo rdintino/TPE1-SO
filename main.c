@@ -42,7 +42,7 @@ int main(int argc, char * argv[]){
         return -1;
     }
 
-    for(int i = 1; i < filesQty; i++){
+    for(int i = 1; i < argc; i++){
         if(isFile(argv[i])){
             files[filesQty++] = argv[i];
         }
@@ -52,24 +52,21 @@ int main(int argc, char * argv[]){
     slave slaves[slavesQty];  
 
     for(int i = 0; i < slavesQty; i++){
-        pipe(slaves[i].masterToSlave);
-        pipe(slaves[i].slaveToMaster);
+        createPipe(slaves[i].masterToSlave);
+        createPipe(slaves[i].slaveToMaster);
         FD_SET (slaves[i].slaveToMaster[0], &readFds);
     }
 
     int currentSlave = 0;
-    int currentId;
-    while(currentSlave < slavesQty){
-        if((currentId = createSlave()) == 0){
-            break;
-        }
+    int currentId = 1;
+    while(currentSlave < slavesQty && currentId != 0){
+        currentId = createSlave();
         currentSlave++;
     }
 
     if(currentId == 0){
         closePipe(slaves[currentSlave-1].masterToSlave[1]);
         closePipe(slaves[currentSlave-1].slaveToMaster[0]);
-
         slaveProcess(slaves[currentSlave-1].masterToSlave, slaves[currentSlave-1].slaveToMaster);
     }
 
