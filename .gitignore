@@ -1,4 +1,5 @@
 *.o
 .bash_history
 .vscode
+*.txt
 testfiles/

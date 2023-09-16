@@ -13,12 +13,16 @@ int main(int argc, char * argv[]){
         perror("No files were given");
         return -1;
     }
-
     for(int i = 1; i < argc; i++){
         if(isFile(argv[i])){
             files[filesQty++] = argv[i];
         }
     }
+    //Creation of shared memory
+    shmemData shmem;
+    shmem.name = SHMEM_NAME;
+    shmem.size = SHMEM_SIZE;
+    createSharedMemory(&shmem);
 
     //Creation of pipes
     int slavesQty = filesQty / SLAVE_FILES + 1;
@@ -75,6 +79,8 @@ int main(int argc, char * argv[]){
                     if(filesQty - filesRead < 1){
                         buffer.isFinished = 1;
                     }
+                    //Writing file data to shared memory
+                     writeInSharedMemory(shmem.fd, &buffer, sizeof(hashData), filesRead);
                     //Writing file data to resultado.txt
                     fprintf(file, "PID: %d, HASH: %s, FILE: %s\n", buffer.pid, buffer.hash, buffer.file);
                     filesRead++;
@@ -91,6 +97,7 @@ int main(int argc, char * argv[]){
         closePipe(slaves[i].slaveToMaster[STDIN]);
         kill(slaves[i].pid, SIGKILL);
     }
+    closeSharedMemory(&shmem);
     fclose(file);
     }
     return 0;
