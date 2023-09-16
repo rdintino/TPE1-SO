@@ -2,43 +2,15 @@
 
 int main(int argc, char * argv[]){
 
-    //Probando a ver si funciona bien la shmem
-    const char *name = "/my_shared_memory";
-    int shm_fd = shm_open(name, O_CREAT | O_RDWR, S_IRUSR | S_IWUSR);
-    if (shm_fd == -1) {
-        perror("shm_open");
-        exit(1);
-    }
-    size_t shm_size = 4096;
-    if (ftruncate(shm_fd, shm_size) == -1) {
-        perror("ftruncate");
-        exit(1);
-    }
-    void *shm_ptr = mmap(NULL, shm_size, PROT_READ | PROT_WRITE, MAP_SHARED, shm_fd, 0);
-    if (shm_ptr == MAP_FAILED) {
-        perror("mmap");
-        exit(1);
-    }
-
-    char *data = "Probando a lo boca";
-    strncpy((char *)shm_ptr, data, strlen(data) + 1);
-
-    if (munmap(shm_ptr, shm_size) == -1) {
-        perror("munmap");
-        exit(1);
-    }
-
-    close(shm_fd);
-
-    char * files[argc - 1];
+    char * files[argc];
     int filesQty = 0;
+    FILE * file = openFile("resultado.txt", "w");
 
     fd_set readFds, readFdsCopy;
     FD_ZERO(&readFds);
-    readFdsCopy = readFds;
 
     if(argc <= 1){
-        fprintf(stderr,"%s\n", "No files found");
+        perror("No files were given");
         return -1;
     }
 
@@ -48,59 +20,78 @@ int main(int argc, char * argv[]){
         }
     }
 
+    //Creation of pipes
     int slavesQty = filesQty / SLAVE_FILES + 1;
     slave slaves[slavesQty];  
-
     for(int i = 0; i < slavesQty; i++){
         createPipe(slaves[i].masterToSlave);
         createPipe(slaves[i].slaveToMaster);
-        FD_SET (slaves[i].slaveToMaster[0], &readFds);
+        FD_SET (slaves[i].slaveToMaster[STDIN], &readFds);
     }
+    readFdsCopy = readFds; //to be restored after select
 
+    //Creation of slaves
     int currentSlave = 0;
     int currentId = 1;
     while(currentSlave < slavesQty && currentId != 0){
         currentId = createSlave();
-        currentSlave++;
+        slaves[currentSlave++].pid = currentId;
     }
-
+    //CHILD PROCESS
     if(currentId == 0){
-        closePipe(slaves[currentSlave-1].masterToSlave[1]);
-        closePipe(slaves[currentSlave-1].slaveToMaster[0]);
+        closePipe(slaves[currentSlave-1].masterToSlave[STDOUT]);
+        closePipe(slaves[currentSlave-1].slaveToMaster[STDIN]);
         slaveProcess(slaves[currentSlave-1].masterToSlave, slaves[currentSlave-1].slaveToMaster);
-    }
-
+    } 
+    //PARENT PROCESS
     else{
         for(int i = 0; i < slavesQty; i++){
-            closePipe(slaves[i].masterToSlave[0]);
-            closePipe(slaves[i].slaveToMaster[1]);
+            closePipe(slaves[i].masterToSlave[STDIN]);
+            closePipe(slaves[i].slaveToMaster[STDOUT]);
         }
         int currentFile = 0;
-        for(int i = 0; i < slavesQty && currentFile < filesQty; i++, currentFile++){
-            write(slaves[i].masterToSlave[1], files[currentFile], sizeof(char *));
-            slaves[i].name = files[currentFile];
+        for(int i = 0; currentFile < slavesQty; i++){
+            write(slaves[i].masterToSlave[STDOUT], &(files[currentFile]), sizeof(char *));
+            slaves[i].name = files[currentFile++];
         }
         char hash[MD5_LENGTH + 1] = {0};
+        hashData buffer;
+        memset(&buffer, 0, sizeof(buffer));
         int filesRead = 0;
         while(filesRead < filesQty){
-            if(select(slavesQty, &readFds, NULL, NULL, NULL) == -1){
-                perror("Problem with select - Master\n");
+            if(select(FD_SETSIZE, &readFds, NULL, NULL, NULL) == -1){
+                perror("Problem with select");
                 exit(1);
             }
-            for(int i = 0; i < slavesQty; i++){
-                if(FD_ISSET(slaves[i].slaveToMaster[0], &readFds)){
-                    if(read(slaves[i].slaveToMaster[0], hash, MD5_LENGTH + 1) == -1){
-                        perror("Problem with read - Master\n");
+            for(int i = 0; i < slavesQty && filesRead < filesQty; i++){
+                if(FD_ISSET(slaves[i].slaveToMaster[STDIN], &readFds)){
+                    if(read(slaves[i].slaveToMaster[STDIN], hash, MD5_LENGTH + 1) == -1){
+                        perror("Problem reading from pipe");
                         exit(1);
                     }
-                    //buffer implementation here
-
+                    buffer.pid = slaves[i].pid;
+                    strcpy(buffer.hash, hash);
+                    strcpy(buffer.file, slaves[i].name);
+                    if(filesQty - filesRead < 1){
+                        buffer.isFinished = 1;
+                    }
+                    //Writing file data to resultado.txt
+                    fprintf(file, "PID: %d, HASH: %s, FILE: %s\n", buffer.pid, buffer.hash, buffer.file);
                     filesRead++;
+                    if(currentFile < filesQty){
+                        write(slaves[i].masterToSlave[1], &(files[currentFile]), sizeof(char *));
+                        slaves[i].name = files[currentFile++];
+                    }
                 }
             }
             readFds = readFdsCopy;
     }
-
-    printf("llegamos\n");
+    for(int i = 0; i < slavesQty; i++){
+        closePipe(slaves[i].masterToSlave[STDOUT]);
+        closePipe(slaves[i].slaveToMaster[STDIN]);
+        kill(slaves[i].pid, SIGKILL);
     }
+    fclose(file);
+    }
+    return 0;
 }

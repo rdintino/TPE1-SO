@@ -8,7 +8,7 @@ int slaveProcess(int * masterToSlave, int * slaveToMaster){
     char output[MD5_LENGTH + 1] = {0};
 
     while(1){
-        read(masterToSlave[0], &fileName, sizeof(char *));
+        read(masterToSlave[STDIN], &fileName, sizeof(char *));
         createPipe(slaveToSlaveMaster);
         if(createSlave() == 0){
             closePipe(STDIN);
@@ -16,15 +16,15 @@ int slaveProcess(int * masterToSlave, int * slaveToMaster){
             dupPipe(slaveToSlaveMaster[STDOUT], STDOUT);
             closePipe(slaveToSlaveMaster[STDOUT]);
             params[1] = fileName;
-            execvp("/usr/bin/md5sum", params);
+            execvp("md5sum", params);
         }
         else{
             closePipe(slaveToSlaveMaster[STDOUT]);
             dupPipe(slaveToSlaveMaster[STDIN], STDIN);
             closePipe(slaveToSlaveMaster[STDIN]);
             wait(NULL);
-            read(STDIN, output, MD5_LENGTH + 1);
-            write(slaveToMaster[STDOUT], output, MD5_LENGTH + 1);        }
+            read(STDIN, output, MD5_LENGTH);
+            write(slaveToMaster[STDOUT], output, MD5_LENGTH);        }
     }
     return 0;
 }

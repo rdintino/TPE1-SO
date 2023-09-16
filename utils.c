@@ -6,6 +6,15 @@ int isFile(char * path){
     return S_ISREG(pathStat.st_mode);
 }
 
+FILE * openFile(char * path, char * mode){
+    FILE * file = fopen(path, mode);
+    if(file == NULL){
+        perror("Problem opening file");
+        exit(1);
+    }
+    return file;
+}
+
 void createPipe(int fd[2]) {
     if(pipe(fd) == -1) {
         perror("Problem creating a pipe");

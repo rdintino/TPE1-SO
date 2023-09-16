@@ -1,0 +1,4 @@
+*.o
+.bash_history
+.vscode
+testfiles/
