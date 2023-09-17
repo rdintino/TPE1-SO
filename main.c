@@ -32,18 +32,16 @@ int main(int argc, char * argv[]){
     createSharedMemory(&shmem);
     //Creation of semaphores
     semaphoreData semaphoreRead, semaphoreDone;
-    if(createSemaphore(&semaphoreRead, SEM_READ_NAME) == SEM_FAILED){
-        unlinkSharedMemory(shmem.name);
-        perror("Problem creating semaphore");
-        exit(1);
-    }
-    if(createSemaphore(&semaphoreDone, SEM_DONE_NAME) == SEM_FAILED){
-        unlinkSemaphore(semaphoreRead.name);
-        unlinkSharedMemory(shmem.name);
-        perror("Problem creating semaphore");
-        exit(1);
-    }
+    createSemaphore(&semaphoreRead, SEM_READ_NAME);
+    createSemaphore(&semaphoreDone, SEM_DONE_NAME);
+
     sem_post(semaphoreDone.semaphore);
+    setvbuf(stdout, NULL, _IONBF, 0);
+    //To be restored in view
+    printf("%s\n", SHMEM_NAME);
+    printf("%s\n", SEM_READ_NAME);
+    printf("%s\n", SEM_DONE_NAME);
+    
     sleep(2);
     //Creation of slaves
     int currentSlave = 0;

@@ -27,11 +27,15 @@ void closePipe(int fd);
 void dupPipe(int fd1, int fd2);
 FILE * openFile(char * path, char * mode);
 void createSharedMemory(shmemData * shmem);
+void openIPC(shmemData * shmem, semaphoreData * semaphoreRead, semaphoreData * semaphoreDone);
 void closeSharedMemory(shmemData * shmem);
 void writeInSharedMemory(int fd, const void *buf, size_t size, int offset);
+void readFromSharedMemory(shmemData * shmem, const void *buf, size_t size, int offset);
 void unlinkSharedMemory(char * name);
-void * createSemaphore(semaphoreData * semaphore, char * name);
+void createSemaphore(semaphoreData * semaphore, char * name);
+void openSemaphore(semaphoreData * semaphore);
 void closeSemaphore(sem_t * semaphore);
 void unlinkSemaphore(char * name);
+void closeIPC(shmemData * shmem, semaphoreData * semaphoreRead, semaphoreData * semaphoreDone);
 void closeApplication(shmemData * shmem, semaphoreData * semaphoreRead, semaphoreData * semaphoreDone, FILE * file);
 #endif
