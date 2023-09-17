@@ -1,7 +1,6 @@
 #include "./includes/main.h"
 
 int main(int argc, char * argv[]){
-
     char * files[argc];
     int filesQty = 0;
     FILE * file = openFile("resultado.txt", "w");
@@ -13,17 +12,12 @@ int main(int argc, char * argv[]){
         perror("No files were given");
         return -1;
     }
+    
     for(int i = 1; i < argc; i++){
         if(isFile(argv[i])){
             files[filesQty++] = argv[i];
         }
     }
-    //Creation of shared memory
-    shmemData shmem;
-    shmem.name = SHMEM_NAME;
-    shmem.size = SHMEM_SIZE;
-    createSharedMemory(&shmem);
-
     //Creation of pipes
     int slavesQty = filesQty / SLAVE_FILES + 1;
     slave slaves[slavesQty];  
@@ -32,8 +26,25 @@ int main(int argc, char * argv[]){
         createPipe(slaves[i].slaveToMaster);
         FD_SET (slaves[i].slaveToMaster[STDIN], &readFds);
     }
-    readFdsCopy = readFds; //to be restored after select
-
+    readFdsCopy = readFds; //To be restored after select
+    //Creation of shared memory
+    shmemData shmem;
+    createSharedMemory(&shmem);
+    //Creation of semaphores
+    semaphoreData semaphoreRead, semaphoreDone;
+    if(createSemaphore(&semaphoreRead, SEM_READ_NAME) == SEM_FAILED){
+        unlinkSharedMemory(shmem.name);
+        perror("Problem creating semaphore");
+        exit(1);
+    }
+    if(createSemaphore(&semaphoreDone, SEM_DONE_NAME) == SEM_FAILED){
+        unlinkSemaphore(semaphoreRead.name);
+        unlinkSharedMemory(shmem.name);
+        perror("Problem creating semaphore");
+        exit(1);
+    }
+    sem_post(semaphoreDone.semaphore);
+    sleep(2);
     //Creation of slaves
     int currentSlave = 0;
     int currentId = 1;
@@ -76,13 +87,14 @@ int main(int argc, char * argv[]){
                     buffer.pid = slaves[i].pid;
                     strcpy(buffer.hash, hash);
                     strcpy(buffer.file, slaves[i].name);
-                    if(filesQty - filesRead < 1){
+                    if(filesQty - filesRead <= 1){
                         buffer.isFinished = 1;
                     }
-                    //Writing file data to shared memory
-                     writeInSharedMemory(shmem.fd, &buffer, sizeof(hashData), filesRead);
                     //Writing file data to resultado.txt
                     fprintf(file, "PID: %d, HASH: %s, FILE: %s\n", buffer.pid, buffer.hash, buffer.file);
+                    //Writing file data to shared memory
+                    writeInSharedMemory(shmem.fd, &buffer, sizeof(hashData), filesRead);
+                    sem_post(semaphoreRead.semaphore);
                     filesRead++;
                     if(currentFile < filesQty){
                         write(slaves[i].masterToSlave[1], &(files[currentFile]), sizeof(char *));
@@ -91,14 +103,13 @@ int main(int argc, char * argv[]){
                 }
             }
             readFds = readFdsCopy;
-    }
-    for(int i = 0; i < slavesQty; i++){
-        closePipe(slaves[i].masterToSlave[STDOUT]);
-        closePipe(slaves[i].slaveToMaster[STDIN]);
-        kill(slaves[i].pid, SIGKILL);
-    }
-    closeSharedMemory(&shmem);
-    fclose(file);
+        }
+        for(int i = 0; i < slavesQty; i++){
+            closePipe(slaves[i].masterToSlave[STDOUT]);
+            closePipe(slaves[i].slaveToMaster[STDIN]);
+            kill(slaves[i].pid, SIGKILL);
+        }
+        closeApplication(&shmem, &semaphoreRead, &semaphoreDone, file);
     }
     return 0;
 }

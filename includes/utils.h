@@ -1,9 +1,9 @@
 #ifndef _UTILS_H_
 #define _UTILS_H_
 
+#include <unistd.h>
 #include "ipc.h"
 #include <stdio.h>
-#include <unistd.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,6 +19,7 @@ typedef struct hashData{
     char file[256];
     int isFinished;
 } hashData;
+
 int isFile(char * path);
 void createPipe(int fd[2]);
 int createSlave();
@@ -27,6 +28,10 @@ void dupPipe(int fd1, int fd2);
 FILE * openFile(char * path, char * mode);
 void createSharedMemory(shmemData * shmem);
 void closeSharedMemory(shmemData * shmem);
-void writeInSharedMemory(int fd, const void *buf, size_t length, int offset);
+void writeInSharedMemory(int fd, const void *buf, size_t size, int offset);
 void unlinkSharedMemory(char * name);
+void * createSemaphore(semaphoreData * semaphore, char * name);
+void closeSemaphore(sem_t * semaphore);
+void unlinkSemaphore(char * name);
+void closeApplication(shmemData * shmem, semaphoreData * semaphoreRead, semaphoreData * semaphoreDone, FILE * file);
 #endif
