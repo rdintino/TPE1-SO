@@ -102,7 +102,7 @@ void createSemaphore(semaphoreData * semaphore, char * name){
 }
 
 void openSemaphore(semaphoreData * semaphore){
-    if((semaphore->semaphore = sem_open(semaphore->name, O_CREAT, S_IRUSR | S_IWUSR, 0)) == SEM_FAILED){
+    if((semaphore->semaphore = sem_open(semaphore->name, O_RDONLY, S_IRUSR | S_IWUSR, 0)) == SEM_FAILED){
         error("Problem opening semaphore", SEMAPHORE_ERROR);
     }
 }
