@@ -151,3 +151,4 @@ void closeApplication(shmemData * shmem, semaphoreData * semaphoreRead, semaphor
     unlinkSemaphore(semaphoreRead->name);
     unlinkSemaphore(semaphoreDone->name);
 }
+
