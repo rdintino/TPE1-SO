@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include "ipc.h"
 #include "slave.h"
+#include "errors.h"
 #include <stdio.h>
 #include <sys/stat.h>
 #include <stdio.h>
@@ -39,6 +40,6 @@ void closeSemaphore(sem_t * semaphore);
 void unlinkSemaphore(char * name);
 void closeIPC(shmemData * shmem, semaphoreData * semaphoreRead, semaphoreData * semaphoreDone);
 void closeApplication(shmemData * shmem, semaphoreData * semaphoreRead, semaphoreData * semaphoreDone, FILE * file);
-
+void error(char * msg, int code);
 
 #endif

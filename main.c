@@ -1,7 +1,5 @@
 #include "./includes/main.h"
 
-void closeChildrenPipe(int slaveQty,int currentSlave,slave* slaves);
-
 int main(int argc, char * argv[]){
     char * files[argc];
     int filesQty = 0;
@@ -11,8 +9,7 @@ int main(int argc, char * argv[]){
     FD_ZERO(&readFds);
 
     if(argc <= 1){
-        perror("No files were given");
-        return -1;
+        error("No files were given", FILE_ERROR);
     }
     
     for(int i = 1; i < argc; i++){
@@ -54,7 +51,8 @@ int main(int argc, char * argv[]){
     }
     //CHILD PROCESS
     if(currentId == 0){
-        closeChildrenPipe(slavesQty,currentSlave-1,slaves);
+        closePipe(slaves[currentSlave-1].masterToSlave[STDOUT]);
+        closePipe(slaves[currentSlave-1].slaveToMaster[STDIN]);
         slaveProcess(slaves[currentSlave-1].masterToSlave, slaves[currentSlave-1].slaveToMaster);
     } 
     //PARENT PROCESS
@@ -65,10 +63,8 @@ int main(int argc, char * argv[]){
         }
         int currentFile = 0;
         for(int i = 0; currentFile < slavesQty; i++){
-            //for (int j = 0; j < 2 && currentFile < slavesQty; j++){ 
-                write(slaves[i].masterToSlave[STDOUT], &(files[currentFile]), sizeof(char *));
-                slaves[i].name = files[currentFile++];
-            //}
+            write(slaves[i].masterToSlave[STDOUT], &(files[currentFile]), sizeof(char *));
+            slaves[i].name = files[currentFile++];
         }
         char hash[MD5_LENGTH + 1] = {0};
         hashData buffer;
@@ -82,8 +78,7 @@ int main(int argc, char * argv[]){
             for(int i = 0; i < slavesQty && filesRead < filesQty; i++){
                 if(FD_ISSET(slaves[i].slaveToMaster[STDIN], &readFds)){
                     if(read(slaves[i].slaveToMaster[STDIN], hash, MD5_LENGTH + 1) == -1){
-                        perror("Problem reading from pipe");
-                        exit(1);
+                        error("Problem reading from pipe", PIPE_ERROR);
                     }
                     buffer.pid = slaves[i].pid;
                     strcpy(buffer.hash, hash);
@@ -113,19 +108,4 @@ int main(int argc, char * argv[]){
         closeApplication(&shmem, &semaphoreRead, &semaphoreDone, file);
     }
     return 0;
-}
-
-void closeChildrenPipe(int slaveQty,int currentSlave,slave* slaves){
-    for (int i = 0; i < slaveQty; i++){
-        if (currentSlave==i){
-            close(0);
-            dup(slaves[i].masterToSlave[0]);
-            close(1);
-            dup(slaves[i].slaveToMaster[1]);              
-        }
-        close(slaves[i].masterToSlave[1]);
-        close(slaves[i].masterToSlave[0]);
-        close(slaves[i].slaveToMaster[1]);
-        close(slaves[i].slaveToMaster[0]);
-    }
 }
