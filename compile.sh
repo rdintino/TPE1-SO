@@ -1,1 +1,0 @@
-gcc -Wall -std=c99 -g main.c slave.c utils.c -o main -lrt
