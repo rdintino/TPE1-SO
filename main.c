@@ -105,6 +105,7 @@ int main(int argc, char * argv[]){
             closePipe(slaves[i].slaveToMaster[STDIN]);
             kill(slaves[i].pid, SIGKILL);
         }
+        sem_wait(semaphoreDone.semaphore);
         closeApplication(&shmem, &semaphoreRead, &semaphoreDone, file);
     }
     return 0;

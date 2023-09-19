@@ -10,20 +10,6 @@ int main(int argc, char *argv[]) {
         strncpy(semaphoreReadName, argv[2], BUFFER_SIZE);
         strncpy(semaphoreDoneName, argv[3], BUFFER_SIZE);
     } else {
-        // fgets(shmemName, BUFFER_SIZE, stdin);
-        // int shmemNameLength = strlen(shmemName);
-        // fgets(semaphoreReadName, BUFFER_SIZE, stdin);
-        // int semaphoreReadNameLength = strlen(semaphoreReadName);
-        // fgets(semaphoreDoneName, BUFFER_SIZE, stdin);
-        // int semaphoreDoneNameLength = strlen(semaphoreDoneName);
-        // if(shmemNameLength == 0 || semaphoreReadNameLength == 0 || semaphoreDoneNameLength == 0) {
-        //     perror("Invalid params");
-        //     exit(1);
-        // }
-    
-        // shmemName[shmemNameLength - 1] = 0;
-        // semaphoreReadName[semaphoreReadNameLength - 1] = 0;
-        // semaphoreDoneName[semaphoreDoneNameLength - 1] = 0;
         scanf("%s", shmemName);
         scanf("%s", semaphoreReadName);
         scanf("%s", semaphoreDoneName);
